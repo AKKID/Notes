@@ -1,3 +1,5 @@
+
+
 ##  牛客网刷题
 
 ### 旋转字符串
@@ -482,6 +484,75 @@ public int minmumNumberOfHost (int n, int[][] startEnd) {
 
 动态规划很直接但是效果不一定好，dp[i]表示以结尾的最长递增子序列的个数，那么dp[i]的值依赖于i之前的数与i的数的大小关系，同时可以利用一个pre[i]记录从i 的前序节点，或者更简单的直接记录这个最长子序列一般的复杂度是$O(n^2)$对于此题来说应该是不满意的
 
+```java
+    public int[] LIS (int[] temp) {
+        int N = temp.length, res = -1, max = -1;
+        int[] pre = new int[N];
+        int[] dp = new int[N];
+        Arrays.fill(dp, 1);
+        Arrays.fill(pre, -1);
+        for(int i = 1; i < dp.length;i++) {
+            int maxIndex = -1;
+            for(int j = i - 1; j >= 0; j--) {
+                if(temp[i] > temp[j]) {
+                    if(dp[j] + 1 > dp[i]) {
+                        maxIndex = j;
+                        dp[i] = dp[j] + 1;
+                    } else if(dp[j] + 1 == dp[i]) {
+                        if(temp[j] < temp[maxIndex])
+                            maxIndex = j;
+                    }
+                }
+            }
+            if(dp[i] >= max) {
+                max = dp[i];
+                res = i;
+            }
+            pre[i] = maxIndex;
+        }
+        int[] ans = new int[max];
+        int a = ans.length - 1;
+        while(res != -1) {
+            ans[a--] = temp[res];
+            res = pre[res];
+        }
+        return ans;
+    }
+```
+
+利用treeset 找到第一个大于等于我的元素并替换
+
+```java
+    public int[] LIS (int[] temp) {
+        int N = temp.length;
+        int[] dp = new int[N];
+        Arrays.fill(dp, 1);
+        TreeSet<Integer> set = new TreeSet<>();
+        set.add(temp[0]);
+        for(int i = 1; i < dp.length; i++) {
+            if(temp[i] > set.last()) {
+                set.add(temp[i]);
+                dp[i] = set.size();
+            } else {
+                int first = set.ceiling(temp[i]);
+                set.remove(first);
+                set.add(temp[i]);
+                dp[i] = set.headSet(temp[i]).size() + 1;
+            }
+        }
+        int[] res = new int[set.size()];
+        for(int i = temp.length - 1, j = set.size(); i >= 0; i--) {
+            if(dp[i] == j) {
+                res[--j] = temp[i];
+            }
+        }
+        return res;
+    }
+    
+```
+
+
+
 ----
 
 ### NC86 矩阵元素查找
@@ -860,6 +931,33 @@ public int solve(int N, int K){
 ```
 
 一个trick是按照等差数列进行扔哈哈对于两个棋子的特殊情况。
+
+```java
+     public int solve(int N, int K){
+        if ( N<1 || K<1 )
+            return 0;
+        if ( K == 1 ) return N;
+        int[] dp = new int[K];
+        int res = 0;
+         while(true) {
+             res++;
+             int pre = 0;
+             for(int i = 0; i < dp.length; i++) {
+                 int tmp = dp[i];
+               // i个棋子扔res次最多能探测的楼层数，即假设每次我们都在最优的位置扔棋子（尽管我们不知道哪里是最优的）
+               // 但我们就在那儿扔，如果碎了则向下探测 dp[i-1][j - 1] 如果没碎 dp[i][j - 1] i颗棋子扔j -1 
+               // 加上这层楼已经搞定了
+                 dp[i] = dp[i] + pre + 1;
+                 pre = tmp;
+                 if(dp[i] >= N) {
+                     return res;
+                 }
+             }
+         }
+    }
+```
+
+
 
 ### NC49 最长的括号子串
 
@@ -1533,6 +1631,32 @@ public long solve (int[] A) {
 > 给定两个字符串str1和str2，输出两个字符串的最长公共子序列。如果最长公共子序列为空，则返回"-1"。目前给出的数据，仅仅会存在一个最长的公共子序列
 
 **分析**
+
+```java
+    public String LCS (String s1, String s2) {
+        int n1 = s1.length(), n2 = s2.length();
+        String[][] dp = new String[n1 + 1][n2 + 1];
+        Arrays.fill(dp[0], "");
+        for(int i = 0; i < dp.length; i++)
+            dp[i][0] = "";
+        for(int i = 1; i < dp.length; i++) {
+            for(int j = 1; j < dp[i].length; j++) {
+                char ch1 = s1.charAt(i - 1);
+                char ch2 = s2.charAt(j - 1);
+                if(ch1 == ch2) {
+                    dp[i][j] = dp[i - 1][j - 1] + ch1;
+                } else {
+                    if(dp[i - 1][j].length() > dp[i][j - 1].length()) dp[i][j] = dp[i - 1][j];
+                    else dp[i][j] = dp[i][j - 1];
+                }
+            }
+        }
+        if(dp[n1][n2].length() == 0) return "-1";
+        return dp[n1][n2];
+    }
+```
+
+
 
 动态规划，dp[i][j] 表示ij中最长公共字串，考虑i 与j是否相同，若相同，则为`dp[i-1][j-1] + char(i) else dp[i][j] = max(dp[i-1][j],dp[i][j-1])`
 
@@ -2786,7 +2910,28 @@ public int maxlenEqualK (int[] arr, int k) {
 
 ```
 
----
+```java
+    public int maxlenEqualK (int[] arr, int k) {
+        Map<Integer, Integer> map = new HashMap<>();
+        int sum = 0, result = 0;
+        for(int i = 0; i < arr.length; i++) {
+            sum += arr[i];
+            int delta = sum - k;
+            if(sum == k) {
+                result = i + 1;
+            }
+            if(map.containsKey(delta)){
+                result = Math.max(i - map.get(delta), result);
+            } else if(!map.containsKey(sum))
+                map.put(sum, i);
+        }
+        return result;
+    }
+```
+
+----
+
+
 
 ### NC31 第一个只出现一次的字符
 
@@ -2905,5 +3050,882 @@ public ListNode partition (ListNode head, int x) {
     }
 
 
+```
+
+----
+
+### NC13 **二叉树的最大深度**
+
+**描述**
+
+> 求给定二叉树的最大深度，
+>
+> 最大深度是指树的根结点到最远叶子结点的最长路径上结点的数量。
+
+**分析**
+
+这个是深度，从根节点出发，比较好计算，递归最为简单，也可以利用层序遍历统计最远的层数
+
+```java
+ public int maxDepth (TreeNode root) {
+        // write code here
+        return nonRec(root);
+    }
+    
+    private int rec(TreeNode root) {
+        if(root == null)
+            return 0;
+        return Math.max(rec(root.left), rec(root.right)) + 1;
+    }
+    private int nonRec(TreeNode root) {
+        if(root == null)
+            return 0;
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.add(root);
+        int count = 0;
+        while(!queue.isEmpty()) {
+            count++;
+            int size = queue.size();
+            for(int i = 0; i < size; i++) {
+                TreeNode cur = queue.poll();
+                if(cur.left != null)
+                    queue.add(cur.left);
+                if(cur.right != null)
+                    queue.add(cur.right);
+            }
+        }
+        return count;
+    }
+```
+
+----
+
+### **NC63** **扑克牌顺子**
+
+**描述**
+
+> 现在有2副扑克牌，从扑克牌中随机五张扑克牌，我们需要来判断一下是不是顺子。
+> 有如下规则：
+> \1. A为1，J为11，Q为12，K为13，A不能视为14
+> \2. 大、小王为 0，0可以看作任意牌
+> \3. 如果给出的五张牌能组成顺子（即这五张牌是连续的）就输出true，否则就输出false。
+> 例如：给出数据[6,0,2,0,4]
+> 中间的两个0一个看作3，一个看作5 。即：[6,3,2,5,4]
+> 这样这五张牌在[2,6]区间连续，输出true
+> 数据保证每组5个数字，每组最多含有4个零，数组的数取值为 [0, 13]
+
+**分析**
+
+有很多种思考的方式，一种想法就是排除法，哪些不可能成为顺子，两副牌有4个王，如果排序后两者相差超过4肯定没戏，如果两者是一样的肯定没戏，如果超过的个数大于王的个数也没戏，足够则减去王的个数，就是这么简单吧
+
+```java
+    public boolean IsContinuous(int [] numbers) {
+        Arrays.sort(numbers);
+        List<Integer> cards = new ArrayList<>();
+        int jokers = 0;
+        for(int n : numbers) {
+            if(n == 0)
+                jokers++;
+            else
+                cards.add(n);
+        }
+        for(int i = 1; i < cards.size(); i++) {
+            int cur = cards.get(i);
+            int pre = cards.get(i - 1);
+            if(cur == pre || cur - pre - 1 > jokers)
+                return false;
+            if(cur == pre + 1)
+                continue;
+            jokers -= (cur - pre - 1);
+        }
+        return true;
+    }
+```
+
+或者就是直接统计需要多少个王，然后比较与jokers的大小关系
+
+```java
+    private boolean test(int[] numbers) {
+                int count = 0;
+        ArrayList<Integer> list = new ArrayList<>();
+        for(int n : numbers)
+            if(n > 0) list.add(n);
+                else  count++;
+        Collections.sort(list);
+        int cntNeed = 0;
+        for(int i = 1; i < list.size(); i++) {
+            int cur = list.get(i);
+            int pre = list.get(i - 1);
+            if(cur == pre) return false;
+            cntNeed += (cur - pre  - 1);
+        }
+        if(cntNeed > count) return false;
+        return true;
+    }
+```
+
+---
+
+### **NC113** **验证IP地址**
+
+**描述**
+
+> 编写一个函数来验证输入的字符串是否是有效的 IPv4 或 IPv6 地址
+>
+> IPv4 地址由十进制数和点来表示，每个地址包含4个十进制数，其范围为 0 - 255， 用(".")分割。比如，172.16.254.1；
+> 同时，IPv4 地址内的数不会以 0 开头。比如，地址 172.16.254.01 是不合法的。
+>
+> IPv6 地址由8组16进制的数字来表示，每组表示 16 比特。这些组数字通过 (":")分割。比如, 2001:0db8:85a3:0000:0000:8a2e:0370:7334 是一个有效的地址。而且，我们可以加入一些以 0 开头的数字，字母可以使用大写，也可以是小写。所以， 2001:db8:85a3:0:0:8A2E:0370:7334 也是一个有效的 IPv6 address地址 (即，忽略 0 开头，忽略大小写)。
+>
+> 然而，我们不能因为某个组的值为 0，而使用一个空的组，以至于出现 (::) 的情况。 比如， 2001:0db8:85a3::8A2E:0370:7334 是无效的 IPv6 地址。
+> 同时，在 IPv6 地址中，多余的 0 也是不被允许的。比如， 02001:0db8:85a3:0000:0000:8a2e:0370:7334 是无效的。
+>
+> 说明: 你可以认为给定的字符串里没有空格或者其他特殊字符。
+
+**分析**
+
+将IPV4和IPV6分析判断写两个函数，题目中已经把二者的判断条件写的比较清楚了，依次编写
+
+```java
+    public String solve (String IP) {
+        // write code here
+       if(isIPV4(IP))
+           return "IPv4";
+        else if(isIPV6(IP))
+            return "IPv6";
+        return "Neither";
+    }
+    
+    
+    private boolean isIPV4(String IP) {
+        String[] ips = IP.split("\\.");
+        if(ips.length != 4)
+            return false;
+        for(String ip : ips) {
+            if(ip == null || (ip.charAt(0) == '0') && ip.length() > 1)
+                return false;
+            try {
+                int count = Integer.parseInt(ip);
+                if(count < 0 || count > 255)
+                    return false;
+            } catch(Exception e) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    private boolean isIPV6(String IP) {
+        String[] ips = IP.split(":");
+        if(ips.length != 8)
+            return false;
+        for(String ip : ips) {
+            if(ip == null || ip.length() > 4)
+                return false;
+            for(char s : ip.toCharArray()) {
+                if((s >= '0') && (s <= '9') || ((s >= 'a') && (s <= 'z') ) || ((s >= 'A') && (s <= 'Z')))
+                    continue;
+                else return false;
+            }
+        }
+        return true;
+    }
+```
+
+---
+
+### NC46 加起来和为目标值的组合
+
+**描述**
+
+> 给出一组候选数*C* 和一个目标数*T*，找出候选数中起来和等于 *T* 的所有组合。*C* 中的每个数字在一个组合中只能使用一次。
+>
+> 注意：
+>
+> - 题目中所有的数字（包括目标数*T* ）都是正整数
+> - 组合中的数字 $(a_1, a_2, … , a_k)$ 要按非递增排序 $(a_1 \leq a_2 \leq … \leq a_k)$.
+> - 结果中不能包含重复的组合
+> - 组合之间的排序按照索引从小到大依次比较，小的排在前面，如果索引相同的情况下数值相同，则比较下一个索引。
+
+**分析**
+
+需要递归查找，或者说回溯, 稍微注意一下去重的条件，就是在一个回溯中相同的值只选取一个
+
+```java
+    public ArrayList<ArrayList<Integer>> combinationSum2(int[] num, int target) {
+        Arrays.sort(num);
+        ArrayList<ArrayList<Integer>> result = new ArrayList<>();
+        helper(num, 0, target, new ArrayList<Integer>(), result);
+        return result;
+    }
+    
+    private void helper(int[] num, int idx, int target, ArrayList<Integer> temp, ArrayList<ArrayList<Integer>> result) {
+        if(target == 0) {
+            result.add(new ArrayList<Integer>(temp));
+            return;
+        }
+        for(int i = idx; i < num.length; i++) {
+            if(i > idx && num[i] == num[i - 1])
+                continue;
+            if(target >= num[i]) {
+                temp.add(num[i]);
+                helper(num, i + 1, target - num[i], temp, result);
+                temp.remove(temp.size() - 1);
+            }
+        }
+    } 
+```
+
+---
+
+### **NC73** **数组中出现次数超过一半的数字**
+
+**描述**
+
+> 数组中有一个数字出现的次数超过数组长度的一半，请找出这个数字。例如输入一个长度为9的数组[1,2,3,2,2,2,5,4,2]。由于数字2在数组中出现了5次，超过数组长度的一半，因此输出2。你可以假设数组是非空的，并且给定的数组总是存在多数元素。1<=数组长度<=50000
+
+**分析**
+
+超过一半，找中位数肯定是可以的，不考虑内存的话统计个数也是很直接的想法
+
+```java
+   public int MoreThanHalfNum_Solution(int [] array) {
+         int len = array.length;
+         Map<Integer, Integer> map = new HashMap<>();
+         for(int n : array) {
+             if(map.containsKey(n)) {
+                 map.put(n, map.get(n) + 1);
+             } else {
+                 map.put(n, 1);
+             }
+             if(map.get(n) > len / 2)
+                 return n;
+         }
+         return -1;
+     }
+```
+
+利用times， 大于一半的数就算是最差情况这样子依然是可以筛选出来的
+
+```java
+     public int MoreThanHalfNum_Solution(int [] array) {
+         int times = 0;
+         int result = -1;
+         for(int n : array) {
+             if(times == 0){
+                 result = n;
+                 times = 1;
+             } else {
+                 if(n == result) times++;
+                 else times--;
+             }
+         }
+         if(result == -1) return 0;
+         return result;
+     }
+```
+
+----
+
+### **NC157** **单调栈**
+
+**描述**
+
+> 给定一个可能含有重复值的数组 arr，找到每一个 i 位置左边和右边离 i 位置最近且值比 arr[i] 小的位置。返回所有位置相应的信息。位置信息包括：两个数字 L 和 R，如果不存在，则值为 -1，下标从 0 开始。
+
+**分析**
+
+我感觉这个题目的名字已经把做法给暴露了，就是在栈中维护一个单调递增的序列，然后给出答案，从左往右左两次
+
+```java
+public int[][] foundMonotoneStack (int[] nums) {
+        // write code here
+        int[][] result = new int[nums.length][2];
+        helper(result, nums, 0, 1, 0, nums.length);
+        helper(result, nums, 1, -1, nums.length -1, -1);
+        return result;
+    }
+    
+    private void helper(int[][] result, int[] nums, int idx, int delta, int start, int end) {
+        Stack<Integer> stack = new Stack<>();
+        for(int i = start; i != end;) {
+            if(stack.isEmpty()) {
+                stack.push(i);
+                result[i][idx] = -1;
+                i+=delta;
+            } else {
+                if(nums[i] > nums[stack.peek()]) {
+                    result[i][idx] = stack.peek();
+                    stack.push(i);
+                    i+=delta;
+                } else if(nums[i] == nums[stack.peek()]) {
+                    result[i][idx] = result[stack.peek()][idx];
+                    i+=delta;
+                } else{
+                    while(!stack.isEmpty() && nums[i] < nums[stack.peek()]) {
+                        stack.pop();
+                    }
+                }
+            }
+        }
+    }
+```
+
+----
+
+### **NC90** **包含min函数的栈**
+
+**描述**
+
+> 定义栈的数据结构，请在该类型中实现一个能够得到栈中所含最小元素的min函数，并且调用 min函数、push函数 及 pop函数 的时间复杂度都是 O(1)
+>
+> push(value):将value压入栈中
+>
+> pop():弹出栈顶元素
+>
+> top():获取栈顶元素
+>
+> min():获取栈中最小元素
+>
+> 示例:
+>
+> 输入:  ["PSH-1","PSH2","MIN","TOP","POP","PSH1","TOP","MIN"]
+>
+> 输出:  -1,2,1,-1
+>
+> 解析:
+>
+> "PSH-1"表示将-1压入栈中，栈中元素为-1
+>
+> "PSH2"表示将2压入栈中，栈中元素为2，-1
+>
+> “MIN”表示获取此时栈中最小元素==>返回-1
+>
+> "TOP"表示获取栈顶元素==>返回2
+>
+> "POP"表示弹出栈顶元素，弹出2，栈中元素为-1
+>
+> "PSH-1"表示将1压入栈中，栈中元素为1，-1
+>
+> "TOP"表示获取栈顶元素==>返回1
+>
+> “MIN”表示获取此时栈中最小元素==>返回-1
+
+**分析**
+
+记录min与当前数值的差值，进行计算
+
+```java
+public class Solution {
+
+    private int min = Integer.MAX_VALUE;
+    Stack<Integer> stack = new Stack<>();
+    public void push(int node) {
+        if(stack.isEmpty()) {
+            min = node;
+            stack.push(node - min);
+        } else {
+            stack.push(node - min);
+            if(node < min) {
+                min = node;
+            }
+        }
+    }
+    
+    public void pop() {
+       int val = stack.pop();
+       if(val <= 0) {
+           min = min - val;
+       }
+    }
+    
+    public int top() {
+        int val = stack.peek();
+        if(val <= 0) return min;
+        else return min + val;
+    }
+    
+    public int min() {
+        return min;
+    }
+     }
+```
+
+----
+
+### NC51 合并k个一排序的链表
+
+> 合并\ k *k* 个已排序的链表并将其作为一个已排序的链表返回。分析并描述其复杂度。
+
+**分析**
+
+每次移动最小值所对应的链表头，利用优先级队列，每次获取最小的节点然后移动构建新的链表
+
+```java
+    public ListNode mergeKLists(ArrayList<ListNode> lists) {
+        ListNode dummy = new ListNode(-1), cur = dummy;
+        PriorityQueue<ListNode> queue = new PriorityQueue<>((o1, o2) -> o1.val - o2.val);
+        for(ListNode node : lists) {
+            if(node != null) {
+                queue.add(node);
+            }
+        }
+        while(!queue.isEmpty()) {
+            ListNode tmp = queue.poll();
+            cur.next = tmp;
+            cur = cur.next;
+            tmp = tmp.next;
+            if(tmp != null)
+                queue.add(tmp);
+        }
+        return dummy.next;
+    }
+```
+
+------
+
+### NC121  **字符串的排列**
+
+**描述**
+
+> 输入一个字符串,按字典序打印出该字符串中字符的所有排列。例如输入字符串abc,则按字典序打印出由字符a,b,c所能排列出来的所有字符串abc,acb,bac,bca,cab和cba。
+
+**分析**
+
+排列问题是要基于递归求解的，计算排列
+
+```java
+    public ArrayList<String> Permutation(String str) {
+        char[] chs = str.toCharArray();
+        Arrays.sort(chs);
+        ArrayList<String> result = new ArrayList<>();
+        boolean[] isVisisted = new boolean[chs.length];
+        helper(chs, "", isVisisted, result);
+        return result;
+    }
+    
+    private void helper(char[] chs, String temp, boolean[] isVisted, ArrayList<String> result) {
+        if(temp.length() == chs.length) {
+            if(!result.contains(temp))
+                result.add(temp);
+            return;
+        }
+        for(int i = 0; i < chs.length; i++) {
+            if(!isVisted[i]) {
+                isVisted[i] = true;
+                helper(chs, temp + chs[i], isVisted, result);
+                isVisted[i] = false;
+            }
+        }
+    }
+```
+
+第二种思考方式，遍历每个位置，构造出排列，每个位置i之后的任何一个字符都能在此位置上填充
+
+```java
+    public ArrayList<String> Permutation(String str) {
+        char[] chs = str.toCharArray();
+        Arrays.sort(chs);
+        ArrayList<String> result = new ArrayList<>();
+        perHelper(chs, 0, result);
+        Collections.sort(result);
+        return result;
+    }
+    
+    private void perHelper(char[] chs, int idx, ArrayList<String> result) {
+        if(idx == chs.length - 1) {
+            String tmp = String.valueOf(chs);
+            if(!result.contains(tmp))
+                result.add(tmp);
+            return;
+        }
+        for(int i = idx; i < chs.length; i++) {
+            swap(chs, idx, i);
+            perHelper(chs, idx + 1, result);
+            swap(chs, idx, i);
+        }
+    }
+```
+
+----
+
+### NC109 岛屿数量
+
+**描述**
+
+> 给一个01矩阵，1代表是陆地，0代表海洋， 如果两个1相邻，那么这两个1属于同一个岛。我们只考虑上下左右为相邻。
+>
+> 岛屿: 相邻陆地可以组成一个岛屿（相邻:上下左右） 判断岛屿个数。
+
+**分析**
+
+深度优先遍历，考察的地方应该在于怎么把这个深度优先给写的简洁全面
+
+```java
+    public int solve (char[][] grid) {
+        int count = 0;
+        for(int i = 0; i < grid.length; i++) {
+            for(int j = 0; j < grid[i].length; j++) {
+                if(grid[i][j] == '1') {
+                    count++;
+                    helper(grid, i, j);
+                }
+            }
+        }
+        return count;
+    }
+    
+    private void helper(char[][] grid, int x, int y) {
+      //  if((x >= 0 && x < grid.length) && (y >= 0 && y < grid[0].length)){
+            grid[x][y] = '0';
+        //}
+        if(x > 0 && grid[x - 1][y] == '1')
+            helper(grid, x - 1, y);
+        if(x < grid.length - 1 && grid[x + 1][y] == '1')
+            helper(grid, x + 1, y);
+        if(y > 0 && grid[x][y - 1] == '1')
+            helper(grid, x, y - 1);
+        if(y < grid[0].length - 1 && grid[x][y + 1] == '1')
+            helper(grid, x, y + 1);
+    }
+```
+
+-----
+
+###NC70 单链表的排序
+
+**描述**
+
+给定一个无序单链表，实现单链表的排序(按升序排序)。
+
+**分析**
+
+1，最简单直接的应该是插入排序
+
+```java
+    private ListNode insertSort(ListNode head) {
+        if(head == null || head.next == null)
+            return head;
+        ListNode dummy = new ListNode(-1), curTail = head, curHead = head.next;
+        dummy.next = curTail;
+        while(curHead != null) {
+            if(curHead.val >= curTail.val) {
+                curTail = curHead;
+            } else {
+                ListNode pre = dummy, cur = dummy.next;
+                curTail.next = curHead.next;
+                while(cur.val < curHead.val) {
+                    pre = cur;
+                    cur = pre.next;
+                }
+                curHead.next = cur;
+                pre.next = curHead;
+            }
+            curHead = curTail.next;
+        }
+        return dummy.next;
+    }
+```
+
+也可以做一个mergeSort,partition的时候注意两个节点的情况
+
+```java
+private ListNode mergeSort(ListNode head) {
+        if(head == null || head.next == null)
+            return head;
+        ListNode slow = head, fast = head.next;
+        while(fast.next != null) {
+            slow = slow.next;
+            fast = fast.next;
+            if(fast.next != null)
+                fast = fast.next;
+        }
+        fast = slow.next;
+        slow.next = null;
+        ListNode first = mergeSort(head);
+        ListNode second = mergeSort(fast);
+        ListNode dummy = new ListNode(-1), cur = dummy;
+        while(first != null && second != null) {
+            if(first.val < second.val){
+                cur.next = first;
+                first = first.next;
+            } else {
+                cur.next = second;
+                second = second.next;
+            }
+            cur = cur.next;
+        }
+        while(first != null) {
+            cur.next = first;
+            cur = cur.next;
+            first = first.next;
+        }
+        while(second != null) {
+            cur.next = second;
+            cur = cur.next;
+            second = second.next;
+        }
+        return dummy.next;
+    }
+```
+
+----
+
+### NC59 矩阵的最小路径和
+
+**描述**
+
+> 给定一个 n * m 的矩阵 a，从左上角开始每次只能向右或者向下走，最后到达右下角的位置，路径上所有的数字累加起来就是路径和，输出所有的路径中最小的路径和。
+
+**分析**
+
+典型动态规划问题啊
+
+```java
+    public int minPathSum (int[][] matrix) {
+        if(matrix == null)
+            return 0;
+       int h = matrix.length, w = matrix[0].length;
+       int[][] dp = new int[h][w];
+       dp[0][0] = matrix[0][0];
+       for(int i = 1; i < dp.length; i++)
+           dp[i][0] = dp[i - 1][0] + matrix[i][0];
+       for(int i = 1; i < dp[0].length; i++)
+           dp[0][i] = dp[0][i - 1] + matrix[0][i];
+       for(int i = 1; i < dp.length; i++) {
+           for(int j = 1; j < dp[i].length; j++) {
+               dp[i][j] = Math.min(dp[i - 1][j], dp[i][j - 1]) + matrix[i][j];
+           }
+       }
+       return dp[h - 1][w - 1];
+    }
+```
+
+-----
+
+### NC62 平衡二叉树
+
+**描述**
+
+> 输入一棵二叉树，判断该二叉树是否是平衡二叉树。
+>
+> 在这里，我们只需要考虑其平衡性，不需要考虑其是不是排序二叉树
+>
+> **平衡二叉树**（Balanced Binary Tree），具有以下性质：它是一棵空树或它的左右两个子树的高度差的绝对值不超过1，并且左右两个子树都是一棵平衡二叉树。
+
+**分析**
+
+这个题目可以利用高度来做文章，递归求解
+
+```java
+    public boolean IsBalanced_Solution(TreeNode root) {
+         height(root);
+        return isBalance;
+    }
+    
+    private int height(TreeNode root) {
+        if(root == null)
+            return 0;
+        int l = height(root.left), r = height(root.right);
+        if(Math.abs(l - r) > 1)
+            isBalance = false;
+        return Math.max(l, r) + 1;
+    }
+```
+
+----
+
+### NC96 判断一个链表是否为回文结构
+
+**分析**
+
+两种做法，一是利用栈，二是反转链表
+
+```java
+private boolean stackWay(ListNode head) {
+        Stack<ListNode> stack = new Stack<>();
+        ListNode cur = head;
+        while(cur != null) {
+            stack.push(cur);
+            cur = cur.next;
+        }
+        cur = head;
+        while(cur != null) {
+            if(cur.val != stack.peek().val)
+                return false;
+            stack.pop();
+            cur = cur.next;
+        }
+        return true;
+    }
+```
+
+```java
+    private boolean reverseWay(ListNode head) {
+        if(head == null || head.next == null) return true;
+        ListNode dummy = new ListNode(-1), cur = head;
+        while(cur != null) {
+            ListNode temp = new ListNode(cur.val);
+            temp.next = dummy.next;
+            dummy.next = temp;
+            cur = cur.next;
+        }
+        ListNode ncur = dummy.next;
+        cur = head;
+        while(cur != null) {
+            if(cur.val != ncur.val)
+                return false;
+            cur = cur.next;
+            ncur = ncur.next;
+        }
+        return true;
+    }
+```
+
+----
+
+### NC35 最小编辑代价
+
+**描述**
+
+> 给定两个字符串str1和str2，再给定三个整数ic，dc和rc，分别代表插入、删除和替换一个字符的代价，请输出将str1编辑成str2的最小代价。
+
+**分析**
+
+动态规划的问题主要是判断初值与转移方程
+
+```java
+    public int minEditCost (String str1, String str2, int ic, int dc, int rc) {
+        int l1 = str1.length(), l2 = str2.length();
+        int[][] dp = new int[l1 + 1][l2 + 1];
+        for(int i = 1; i < dp.length; i++)
+           dp[i][0] = dc * i;
+        for(int i = 1; i < l2 + 1; i++)
+           dp[0][i] = ic * i;
+        for(int i = 1; i < dp.length; i++) {
+            for(int j = 1; j < dp[i].length; j++) {
+                char s1 = str1.charAt(i - 1);
+                char s2 = str2.charAt(j - 1);
+                if(s1 == s2) {
+                  // 相等最完美
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                  // 不想等的话 一次考虑替换，删除，插入这三种选择选取最小代价哦
+                    dp[i][j] = Math.min(dp[i - 1][j - 1] + rc, Math.min(dp[i - 1][j] + dc, dp[i][j - 1] + ic));
+                }
+            }
+        }
+        return dp[l1][l2];
+    }
+```
+
+----
+
+### NC5 **二叉树根节点到叶子节点的所有路径和**
+
+**描述**
+
+> 给定一个仅包含数字\ 0-9 0−9 的二叉树，每一条从根节点到叶子节点的路径都可以用一个数字表示。
+> 例如根节点到叶子节点的一条路径是1\to 2\to 31→2→3,那么这条路径就用\ 123 123 来代替。
+> 找出根节点到叶子节点的所有路径表示的数字之和
+> 例如：
+>
+> ![img](https://uploadfiles.nowcoder.com/images/20200807/999991351_1596786228797_BC85E8592A231E74E5338EBA1CFB2D20)
+>
+> 这颗二叉树一共有两条路径，
+> 根节点到叶子节点的路径 1\to 21→2 用数字\ 12 12 代替
+> 根节点到叶子节点的路径 1\to 31→3 用数字\ 13 13 代替
+> 所以答案为\ 12+13=25 12+13=25
+
+**分析**
+
+首先一个注意要点是叶子结点的定义，那就意味着此节点的左右孩子为空
+
+```java
+     int sum = 0;
+     public int sumNumbers (TreeNode root) {
+         if(root == null)
+             return 0;
+         helper(root, 0);
+         return sum;
+     }
+    
+     private void helper(TreeNode root, int pre) {
+         int curVal = pre * 10 + root.val;
+         if(root.left == null && root.right == null){
+             sum += curVal;
+         } else {
+            if(root.left != null)  helper(root.left, curVal);
+            if(root.right != null) helper(root.right, curVal);
+         }
+     }
+```
+
+---
+
+### NC8 **二叉树根节点到叶子节点和为指定值的路径**
+
+**描述**
+
+> 给定一个二叉树和一个值\ sum *s**u**m*，请找出所有的根节点到叶子节点的节点值之和等于\ sum *s**u**m* 的路径
+
+**分析**
+
+同样的叶子结点的分析，写代码有时候很重要的一部分，不变式的保证，比如我们想让递归的节点永远不是null那么我们在递归之前就要先做一些保证以此维持这个不变式
+
+```java
+    public ArrayList<ArrayList<Integer>> pathSum (TreeNode root, int sum) {
+        ArrayList<ArrayList<Integer>> result = new ArrayList<>();
+        if(root == null) return result;
+        helper(root, sum, new ArrayList<Integer>(), result);
+        return result;
+    }
+    
+    private void helper(TreeNode root, int target, ArrayList<Integer> temp, ArrayList<ArrayList<Integer>> result) {
+        temp.add(root.val);
+        if(root.left == null && root.right == null && root.val == target){
+            result.add(new ArrayList<Integer>(temp));
+        } else {
+            if(root.left != null)  helper(root.left, target - root.val, temp, result);
+            if(root.right != null) helper(root.right, target - root.val, temp, result);
+        }
+        temp.remove(temp.size() - 1);
+    }
+```
+
+----
+
+### **NC21** **链表内指定区间反转**
+
+**描述**
+
+> 将一个链表\ m *m* 位置到\ n *n* 位置之间的区间反转，要求时间复杂度 O(n)*O*(*n*)，空间复杂度 O(1)*O*(1)。
+> 例如：
+> 给出的链表为 1\to 2 \to 3 \to 4 \to 5 \to NULL1→2→3→4→5→*N**U**L**L*, m=2,n=4*m*=2,*n*=4,
+> 返回 1\to 4\to 3\to 2\to 5\to NULL1→4→3→2→5→*N**U**L**L*.
+> 注意：
+> 给出的 m*m*,n*n* 满足以下条件：
+> 1 \leq m \leq n \leq 链表长度1≤*m*≤*n*≤链表长度
+
+**分析**
+
+反转这种链表的时候有一个不变量，就是原来的head会成为最终的末尾节点这道题值的二刷，先找到m的前驱节点，然后从m的后一个节点开始插入，同时保证m节点每次都挂在他的next.next节点上
+
+```java
+public ListNode reverseBetween (ListNode head, int m, int n) {
+        ListNode dummy = new ListNode(-1), pre = dummy;
+        dummy.next = head;
+        for(int i = 1; i < m; i++)
+            pre = pre.next;
+        head = pre.next;
+        ListNode next;
+        for(int i = m; i < n; i++) {
+            next = head.next;
+            head.next = next.next;
+            next.next = pre.next;
+            pre.next = next;
+        }
+        return dummy.next;
+    }
 ```
 
