@@ -3929,3 +3929,103 @@ public ListNode reverseBetween (ListNode head, int m, int n) {
     }
 ```
 
+-----
+
+### NC95 **数组中的最长连续子序列**
+
+**描述**
+
+> 给定无序数组arr，返回其中最长的连续序列的长度(要求值连续，位置可以不连续,例如 3,4,5,6为连续的自然数）
+
+**分析**
+
+直观的解法是排序，`然后从开始依次查找O(nlgn)`的复杂度
+
+```java
+    public int MLS (int[] arr) {
+        // write code here
+        if(arr == null || arr.length == 0)
+            return 0;
+        TreeSet<Integer> set = new TreeSet<>();
+        for(int n : arr)
+            if(!set.contains(n))
+                set.add(n);
+        int max = 0, count = 0;
+        Integer tmp = set.first();
+        while(tmp != null) {
+            while(set.contains(tmp)) {
+                set.remove(tmp);
+                tmp++;
+                count++;
+            }
+            max = Math.max(max, count);
+            count = 0;
+            tmp = set.higher(tmp);
+        }
+        return max;
+ }
+```
+
+利用set的性质，从第一个开始查找
+
+```java
+    public int MLS (int[] arr) {
+        // write code here
+        if(arr == null || arr.length == 0)
+            return 0;
+        Set<Integer> set = new HashSet<>();
+        for(int n : arr)
+            if(!set.contains(n))
+                set.add(n);
+        int max = 0;
+        for(int n : arr) {
+            if(set.contains(n - 1)) continue;
+            else {
+                int count = n;
+                while(set.contains(count))
+                    count++;
+                max = Math.max(max, count - n);
+            }
+        }
+        return max;
+    }
+```
+
+------
+
+### 二分查找的讨论
+
+今天看了下两种二分查找的实现，顺便在这里总结一下二分查找的细节，第一种实现方式
+
+```java
+public in search(int[] nums, int target) {
+        int l = 0, r = nums.length - 1;
+        while(l <= r) {
+            int m = l + ((r - l) >> 1);
+            if(nums[m] > target)
+                r = m - 1;
+            else if(nums[m] < target)
+                l = m + 1;
+            else return m;
+        }
+        return -1;
+}
+```
+
+也是我最爱实现的一种方式，其实写代码很多时候就是在维护着一个不变式，这里的起时条件是搜索区间`[l,r]`最终结束的条件`l=r+1`他们之间形成的是空区间因为我们已经看过`m`已经不是我们要找的元素了，所以可以进行加减
+
+```java
+    public int search (int[] nums, int target) {
+        // write code here
+        int l = 0, r = nums.length;
+        while(l < r) {
+            int m = (l + r) / 2;
+            if(nums[m] < target) l = m + 1;
+            else if(nums[m] > target) r = m;
+            else return m;
+        }
+        return -1;
+    }
+```
+
+这种写法呢是维护着一个`[l,r)` 的区间所以r可以set成m，最终的退出条件是`l=r`所以有一个没有进行测试？
